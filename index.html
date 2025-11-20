@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Expense Tracker - Upload & Analyze</title>
+    <link href="/css/style.css" rel="stylesheet">
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <div class="header-text">
+                <h1>Expense Tracker - Upload & Analyze</h1>
+                <p>Upload your expenses in JSON/PDF format or manually add expenses to get insights.</p>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <section class="upload-section">
+                <h2>Upload Expenses</h2>
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-icon" aria-hidden="true">📁</div>
+                    <p><strong>Drag & drop your file here</strong></p>
+                    <p>or</p>
+                    <button type="button" class="btn" id="browseBtn">Browse Files</button>
+                    <input type="file" id="fileInput" title="file" accept="image/*, application/pdf, application/json" aria-label="Upload Expense File">
+                    <div id="fileNameDisplay"></div>
+                    <p>Supported formats: JSON, PDF or Image</p>
+                </div>
+            </section>
+
+            <section class="manual-entry">
+                <h2>Add Expense Manually</h2>
+                <form id="expenseForm">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="description">Description</label>
+                            <input type="text" id="description" name="description" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="amount">Amount (₦)</label>
+                            <input type="number" id="amount" name="amount" step="1" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="category">Category</label>
+                            <select id="category" name="category" required>
+                                <option value="food">Food</option>
+                                <option value="transport">Transport</option>
+                                <option value="entertainment">Entertainment</option>
+                                <option value="utilities">Utilities</option>
+                                <option value="shopping">Shopping</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="date">Date</label>
+                            <input type="date" id="date" name="date" required>
+                        </div>
+                    </div>
+                    <button type="button" class="btn" id="addExpense">Add Expense</button>
+                    <button type="button" class="btn btn-secondary" id="clear">Clear All</button>
+                </form>
+            </section>
+        </main>
+
+        <output class="output-content">
+            <section class="insights" id="insights">
+                <div class="insight-card">
+                    <h3>Total Expenses</h3>
+                    <div class="value" id="totalExpenses">₦0.00</div>
+                </div>
+                <div class="insight-card">
+                    <h3>Number of Transactions</h3>
+                    <div class="value" id="transactionCount">0</div>
+                </div>
+                <div class="insight-card">
+                    <h3>Average per Transaction</h3>
+                    <div class="value" id="avgTransaction">₦0.00</div>
+                </div>
+                <div class="insight-card">
+                    <h3>Top Category</h3>
+                    <div class="value capitalize" id="topCategory">-</div>
+                </div>
+            </section>
+
+            <section class="expenses-list">
+                <h2>Recent Expenses</h2>
+                <div id="expensesList">
+                    <div class="expense-item">
+                        <div class="expense-date">Date</div>
+                        <div class="expense-category">Category</div>
+                        <div class="expense-description">Description</div>
+                        <div class="expense-amount">Amount</div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="chart-container">
+                <h2>Category Breakdown</h2>
+                <div id="categoryChart"></div>
+            </section>
+        </output>
+    </div>
+
+    <script src="/js/tracker.js"></script>
+</body>
+
+</html>
