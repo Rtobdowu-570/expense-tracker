@@ -89,7 +89,6 @@ class FileHandler {
         // handle pdf and image files
         if (file.type === `application/pdf` || file.type.startsWith(`image/`)) 
         {
-          
           // convert to base64
           const base64 = await this.fileToBase64(file);
           const cleanBase64 = base64.split(',')[1];
@@ -103,6 +102,7 @@ class FileHandler {
             body: this.buildFormData(cleanBase64, file.type)
         });
 
+        const ocrData = await ocrResponse.json();
           // handle response
           if (ocrData.IsErroredOnProcessing) {
             ui.alert('danger', ocrData.ErrorMessage, 'error');
@@ -158,7 +158,7 @@ class FileHandler {
     processData(data) {
     const expenses = Array.isArray(data) ? data : [data];
   
-  expenses.forEach(expense => {
+  expenses.forEach((expense, index) => {
       const formatted = this.formatData(expense); 
       const expenseObj = new Expense(
         formatted.description,
@@ -177,11 +177,11 @@ class FileHandler {
           date: expenseObj.date
         });
       } else {
-        console.warn('Invalid expense skipped:', item);
-        ui.alert('danger', 'Invalid data format', 'error');
+        console.warn('Invalid expense skipped:', `(index ${index}): `, expense);
+        ui.alert('danger', `Invalid expense format at item ${index + 1}`, 'error');
       }
     });
-    
+    Store.saveExpenses(expenseManager.expenseManager.expenses);
     ui.displayUI();
     ui.alert('success', `${expenses.length} expense(s) added successfully!`, 'success');
   }
@@ -423,16 +423,45 @@ class UI {
 }
 }
 
-  // Expense manager instance
+class Store {
+
+  static saveExpenses(expenses) {
+    try {
+      localStorage.setItem(Store.STORAGE_KEY, JSON.stringify(expenses));
+    } catch (error) {
+      ui.alert('danger', 'Failed to save expenses', 'error');
+    }
+  }
+
+  static loadExpenses() {
+    try {
+      const data = localStorage.getItem(Store.STORAGE_KEY);
+      return data ? JSON.parse(data) : [];
+    } catch (error) {
+      ui.alert('danger', 'Failed to load expenses', 'warning');
+      return [];
+    }
+  }
+
+  static clearExpenses() {
+    localStorage.removeItem(Store.STORAGE_KEY);
+  }
+}
+
+Store.STORAGE_KEY = 'expenseTracker_expenses';
+
+
+// Expense manager instance
   const expenseManager = new ExpenseManager()
   const ui = new UI(expenseManager)
+  const store = new Store();
 
-// Storage
-class Store {}
 
 // Event Listeners
 // on load
 document.addEventListener('DOMContentLoaded', () => {
+  const saved = Store.loadExpenses();
+  expenseManager.expenses = saved;
   ui.displayUI();
   ui.alert('success', 'Dom loaded successfully', 'success');
 })
@@ -440,18 +469,21 @@ document.addEventListener('DOMContentLoaded', () => {
 // add expense
 document.querySelector('#addExpense').addEventListener('click', () => {
   ui.addExpense();
+  Store.saveExpenses(expenseManager.expenses);
   ui.alert('success', 'Expense added successfully', 'success');
 })
 
 // clear expenses
 document.querySelector('#clear').addEventListener('click', () => {
   ui.clearExpenses();
+  Store.deleteAllExpenses();
   ui.alert('success', 'Expenses cleared successfully', 'success');
 })
 
 // delete all expenses
 document.querySelector('#clear').addEventListener('click', () => {
-  ui.deleteAllExpenses();
+    expenseManager.expenses = [];
+    Store.clearExpenses();
   ui.alert('success', 'All expenses deleted successfully', 'success');
 })
 

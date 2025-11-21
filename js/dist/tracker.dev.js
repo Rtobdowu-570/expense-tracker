@@ -89,7 +89,7 @@ function () {
     value: function handleUpload(file) {
       var _this = this;
 
-      var base64, cleanBase64, ocrResponse, fullText, rawExpense;
+      var base64, cleanBase64, ocrResponse, ocrData, fullText, rawExpense;
       return regeneratorRuntime.async(function handleUpload$(_context) {
         while (1) {
           switch (_context.prev = _context.next) {
@@ -97,7 +97,7 @@ function () {
               _context.prev = 0;
 
               if (!this.isValidFile(file)) {
-                _context.next = 17;
+                _context.next = 20;
                 break;
               }
 
@@ -134,7 +134,7 @@ function () {
 
             case 4:
               if (!(file.type === "application/pdf" || file.type.startsWith("image/"))) {
-                _context.next = 17;
+                _context.next = 20;
                 break;
               }
 
@@ -156,6 +156,11 @@ function () {
 
             case 11:
               ocrResponse = _context.sent;
+              _context.next = 14;
+              return regeneratorRuntime.awrap(ocrResponse.json());
+
+            case 14:
+              ocrData = _context.sent;
 
               // handle response
               if (ocrData.IsErroredOnProcessing) {
@@ -172,22 +177,22 @@ function () {
               rawExpense = this.extractExpenseFromText(fullText);
               this.processData(rawExpense);
 
-            case 17:
-              _context.next = 23;
+            case 20:
+              _context.next = 26;
               break;
 
-            case 19:
-              _context.prev = 19;
+            case 22:
+              _context.prev = 22;
               _context.t0 = _context["catch"](0);
               console.error(_context.t0);
               ui.alert('danger', _context.t0.message, 'error');
 
-            case 23:
+            case 26:
             case "end":
               return _context.stop();
           }
         }
-      }, null, this, [[0, 19]]);
+      }, null, this, [[0, 22]]);
     } // Convert file to base64
 
   }, {
@@ -233,7 +238,7 @@ function () {
       var _this2 = this;
 
       var expenses = Array.isArray(data) ? data : [data];
-      expenses.forEach(function (expense) {
+      expenses.forEach(function (expense, index) {
         var formatted = _this2.formatData(expense);
 
         var expenseObj = new Expense(formatted.description, formatted.amount, formatted.category, formatted.date); // Formatted data
@@ -247,10 +252,11 @@ function () {
             date: expenseObj.date
           });
         } else {
-          console.warn('Invalid expense skipped:', item);
-          ui.alert('danger', 'Invalid data format', 'error');
+          console.warn('Invalid expense skipped:', "(index ".concat(index, "): "), expense);
+          ui.alert('danger', "Invalid expense format at item ".concat(index + 1), 'error');
         }
       });
+      Store.saveExpenses(expenseManager.expenseManager.expenses);
       ui.displayUI();
       ui.alert('success', "".concat(expenses.length, " expense(s) added successfully!"), 'success');
     }
@@ -517,35 +523,74 @@ function () {
   }]);
 
   return UI;
-}(); // Expense manager instance
+}();
 
+var Store =
+/*#__PURE__*/
+function () {
+  function Store() {
+    _classCallCheck(this, Store);
+  }
+
+  _createClass(Store, null, [{
+    key: "saveExpenses",
+    value: function saveExpenses(expenses) {
+      try {
+        localStorage.setItem(Store.STORAGE_KEY, JSON.stringify(expenses));
+      } catch (error) {
+        ui.alert('danger', 'Failed to save expenses', 'error');
+      }
+    }
+  }, {
+    key: "loadExpenses",
+    value: function loadExpenses() {
+      try {
+        var data = localStorage.getItem(Store.STORAGE_KEY);
+        return data ? JSON.parse(data) : [];
+      } catch (error) {
+        ui.alert('danger', 'Failed to load expenses', 'warning');
+        return [];
+      }
+    }
+  }, {
+    key: "clearExpenses",
+    value: function clearExpenses() {
+      localStorage.removeItem(Store.STORAGE_KEY);
+    }
+  }]);
+
+  return Store;
+}();
+
+Store.STORAGE_KEY = 'expenseTracker_expenses'; // Expense manager instance
 
 var expenseManager = new ExpenseManager();
-var ui = new UI(expenseManager); // Storage
-
-var Store = function Store() {
-  _classCallCheck(this, Store);
-}; // Event Listeners
+var ui = new UI(expenseManager);
+var store = new Store(); // Event Listeners
 // on load
 
-
 document.addEventListener('DOMContentLoaded', function () {
+  var saved = Store.loadExpenses();
+  expenseManager.expenses = saved;
   ui.displayUI();
   ui.alert('success', 'Dom loaded successfully', 'success');
 }); // add expense
 
 document.querySelector('#addExpense').addEventListener('click', function () {
   ui.addExpense();
+  Store.saveExpenses(expenseManager.expenses);
   ui.alert('success', 'Expense added successfully', 'success');
 }); // clear expenses
 
 document.querySelector('#clear').addEventListener('click', function () {
   ui.clearExpenses();
+  Store.deleteAllExpenses();
   ui.alert('success', 'Expenses cleared successfully', 'success');
 }); // delete all expenses
 
 document.querySelector('#clear').addEventListener('click', function () {
-  ui.deleteAllExpenses();
+  expenseManager.expenses = [];
+  Store.clearExpenses();
   ui.alert('success', 'All expenses deleted successfully', 'success');
 }); // file upload 
 
