@@ -1,5 +1,21 @@
 "use strict";
 
+function _slicedToArray(arr, i) { return _arrayWithHoles(arr) || _iterableToArrayLimit(arr, i) || _nonIterableRest(); }
+
+function _nonIterableRest() { throw new TypeError("Invalid attempt to destructure non-iterable instance"); }
+
+function _iterableToArrayLimit(arr, i) { if (!(Symbol.iterator in Object(arr) || Object.prototype.toString.call(arr) === "[object Arguments]")) { return; } var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"] != null) _i["return"](); } finally { if (_d) throw _e; } } return _arr; }
+
+function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
+
+function _toConsumableArray(arr) { return _arrayWithoutHoles(arr) || _iterableToArray(arr) || _nonIterableSpread(); }
+
+function _nonIterableSpread() { throw new TypeError("Invalid attempt to spread non-iterable instance"); }
+
+function _iterableToArray(iter) { if (Symbol.iterator in Object(iter) || Object.prototype.toString.call(iter) === "[object Arguments]") return Array.from(iter); }
+
+function _arrayWithoutHoles(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = new Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } }
+
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
@@ -58,6 +74,7 @@ function () {
     _classCallCheck(this, FileHandler);
 
     this.supportedFormats = ["application/json", "application/pdf", "image/png", "image/jpeg", "image/gif", "image/webp", "image/jpg"];
+    this.OCR_API_KEY = 'K85150228188957';
   } // validate file
 
 
@@ -72,8 +89,7 @@ function () {
     value: function handleUpload(file) {
       var _this = this;
 
-      var base64, response, _data, formattedData, expense;
-
+      var base64, cleanBase64, ocrResponse, fullText, rawExpense;
       return regeneratorRuntime.async(function handleUpload$(_context) {
         while (1) {
           switch (_context.prev = _context.next) {
@@ -81,7 +97,7 @@ function () {
               _context.prev = 0;
 
               if (!this.isValidFile(file)) {
-                _context.next = 19;
+                _context.next = 17;
                 break;
               }
 
@@ -95,11 +111,11 @@ function () {
 
                 jsonReader.onload = function () {
                   try {
-                    var jsonData = JSON.parse(jsonReader.result); // process data
+                    var JsonData = JSON.parse(jsonReader.result); // process data
 
-                    _this.processData(jsonData);
+                    _this.processData(JsonData);
 
-                    resolve(jsonData);
+                    resolve(JsonData);
                     ui.alert('success', 'File uploaded successfully', 'success');
                   } catch (err) {
                     reject(err);
@@ -118,89 +134,86 @@ function () {
 
             case 4:
               if (!(file.type === "application/pdf" || file.type.startsWith("image/"))) {
-                _context.next = 19;
+                _context.next = 17;
                 break;
               }
 
               _context.next = 7;
-              return regeneratorRuntime.awrap(new Promise(function (resolve, reject) {
-                var reader = new FileReader(); // onload
-
-                reader.onload = function () {
-                  resolve(reader.result);
-                }; // onerror
-
-
-                reader.onerror = function () {
-                  reject(reader.error);
-                };
-
-                reader.readAsDataURL(file);
-              }));
+              return regeneratorRuntime.awrap(this.fileToBase64(file));
 
             case 7:
               base64 = _context.sent;
-              _context.next = 10;
-              return regeneratorRuntime.awrap(fetch("".concat(window.location.origin, "/api/extract-expense"), {
-                method: "POST",
+              cleanBase64 = base64.split(',')[1]; // send request to ocr Api
+
+              _context.next = 11;
+              return regeneratorRuntime.awrap(fetch('https://api.ocr.space/parse/image', {
+                method: 'POST',
                 headers: {
-                  "Content-Type": "application/json"
+                  'apikey': this.OCR_API_KEY
                 },
-                body: JSON.stringify({
-                  file: base64,
-                  fileType: file.type
-                })
+                body: this.buildFormData(cleanBase64, file.type)
               }));
 
-            case 10:
-              response = _context.sent;
+            case 11:
+              ocrResponse = _context.sent;
 
-              if (response.ok) {
-                _context.next = 13;
-                break;
+              // handle response
+              if (ocrData.IsErroredOnProcessing) {
+                ui.alert('danger', ocrData.ErrorMessage, 'error');
               }
 
-              throw new Error("Error extracting expense from file");
+              fullText = ocrData.ParsedResults[0].ParsedText;
 
-            case 13:
-              _context.next = 15;
-              return regeneratorRuntime.awrap(response.json());
+              if (!fullText.trim()) {
+                ui.alert('danger', 'No text found in the image', 'error');
+              } // process data
 
-            case 15:
-              _data = _context.sent;
-              formattedData = this.formatData(_data);
-              expense = new Expense(formattedData.description, formattedData.amount, formattedData.category, formattedData.date); // validate Formatted data
 
-              if (expense.isValid()) {
-                expenseManager.expenses.unshift({
-                  id: expense.id,
-                  description: expense.description,
-                  amount: expense.amount,
-                  category: expense.category,
-                  date: expense.date
-                });
-                ui.displayUI();
-                ui.alert('success', 'File extracted successfully', 'success');
-              } else {
-                ui.alert('danger', 'Invalid extracted data format', 'error');
-              }
+              rawExpense = this.extractExpenseFromText(fullText);
+              this.processData(rawExpense);
 
-            case 19:
-              _context.next = 25;
+            case 17:
+              _context.next = 23;
               break;
 
-            case 21:
-              _context.prev = 21;
+            case 19:
+              _context.prev = 19;
               _context.t0 = _context["catch"](0);
               console.error(_context.t0);
               ui.alert('danger', _context.t0.message, 'error');
 
-            case 25:
+            case 23:
             case "end":
               return _context.stop();
           }
         }
-      }, null, this, [[0, 21]]);
+      }, null, this, [[0, 19]]);
+    } // Convert file to base64
+
+  }, {
+    key: "fileToBase64",
+    value: function fileToBase64(file) {
+      return new Promise(function (resolve, reject) {
+        var reader = new FileReader();
+
+        reader.onload = function () {
+          return resolve(reader.result);
+        };
+
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+  }, {
+    key: "buildFormData",
+    value: function buildFormData(base64, fileType) {
+      var formData = new FormData();
+      formData.append('base64Image', "data:".concat(fileType, ";base64,").concat(base64));
+      formData.append('language', 'eng');
+      formData.append('isOverlayRequired', 'false');
+      formData.append('scale', 'true');
+      formData.append('OCREngine', '2');
+      return formData;
     } // Format Expense data
 
   }, {
@@ -216,10 +229,10 @@ function () {
 
   }, {
     key: "processData",
-    value: function processData(JsonData) {
+    value: function processData(data) {
       var _this2 = this;
 
-      var expenses = Array.isArray(JsonData) ? data : [JsonData];
+      var expenses = Array.isArray(data) ? data : [data];
       expenses.forEach(function (expense) {
         var formatted = _this2.formatData(expense);
 
@@ -234,11 +247,94 @@ function () {
             date: expenseObj.date
           });
         } else {
+          console.warn('Invalid expense skipped:', item);
           ui.alert('danger', 'Invalid data format', 'error');
         }
       });
       ui.displayUI();
-      ui.alert('success', 'File uploaded successfully', 'success');
+      ui.alert('success', "".concat(expenses.length, " expense(s) added successfully!"), 'success');
+    }
+  }, {
+    key: "extractExpenseFromText",
+    value: function extractExpenseFromText(text) {
+      var lines = text.split('\n').map(function (l) {
+        return l.trim();
+      }).filter(Boolean);
+      var lowerText = text.toLowerCase();
+      var amount = 0;
+      var date = new Date().toISOString().split('T')[0];
+      var description = 'Expense'; // Find largest amount
+
+      var amountRegex = /₦?\s?([0-9,]+(\.[0-9]{1,2})?)/g;
+
+      var amounts = _toConsumableArray(text.matchAll(amountRegex)).map(function (m) {
+        return parseFloat(m[1].replace(/,/g, ''));
+      }).filter(function (n) {
+        return n > 0;
+      });
+
+      if (amounts.length > 0) {
+        amount = Math.max.apply(Math, _toConsumableArray(amounts));
+      } // Find date 
+
+
+      var datePatterns = [/\b(\d{4}[-\/]\d{2}[-\/]\d{2})\b/, /\b(\d{1,2}[-\/]\d{1,2}[-\/]\d{2,4})\b/, /\b(january|february|march|april|may|june|july|august|september|october|november|december)\s+\d{1,2},?\s+\d{4}/i];
+
+      for (var _i = 0, _datePatterns = datePatterns; _i < _datePatterns.length; _i++) {
+        var pattern = _datePatterns[_i];
+        var match = text.match(pattern);
+
+        if (match) {
+          try {
+            var parsed = new Date(match[0]);
+
+            if (!isNaN(parsed)) {
+              date = parsed.toISOString().split('T')[0];
+              break;
+            }
+          } catch (_unused) {}
+        }
+      } // Guess description from keywords
+
+
+      var keywords = {
+        food: ['restaurant', 'kfc', 'chicken', 'rice', 'food', 'lunch', 'dinner', 'shawarma', 'pizza'],
+        transport: ['uber', 'bolt', 'taxi', 'fuel', 'petrol', 'bus', 'transport', 'danfo'],
+        shopping: ['shoprite', 'market', 'store', 'mall', 'clothes', 'shoe'],
+        utilities: ['airtime', 'data', 'electricity', 'nepa', 'dstv', 'gotv', 'internet'],
+        entertainment: ['cinema', 'netflix', 'drink', 'bar', 'club'],
+        health: ['pharmacy', 'drug', 'hospital', 'clinic']
+      };
+      var detectedCategory = 'Other';
+
+      for (var _i2 = 0, _Object$entries = Object.entries(keywords); _i2 < _Object$entries.length; _i2++) {
+        var _Object$entries$_i = _slicedToArray(_Object$entries[_i2], 2),
+            category = _Object$entries$_i[0],
+            words = _Object$entries$_i[1];
+
+        if (words.some(function (word) {
+          return lowerText.includes(word);
+        })) {
+          detectedCategory = category.charAt(0).toUpperCase() + category.slice(1);
+          break;
+        }
+      } // Fallback description: first non-empty line or "Receipt expense"
+
+
+      description = (lines && lines[0] ? lines[0].slice(0, 50) : '') || 'Receipt expense';
+
+      if (description.toLowerCase().includes('total') || description.length < 3) {
+        description = lines.find(function (l) {
+          return l.length > 10 && !l.match(/₦|total|amount/i);
+        }) || 'Expense';
+      }
+
+      return {
+        description: description.trim(),
+        amount: parseFloat(amount.toFixed(2)),
+        category: detectedCategory,
+        date: date
+      };
     }
   }]);
 

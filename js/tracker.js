@@ -41,6 +41,7 @@ class FileHandler {
       "image/webp",
       "image/jpg",
     ];
+    this.OCR_API_KEY = 'K85150228188957';
   }
 
   // validate file
@@ -63,11 +64,11 @@ class FileHandler {
             const jsonReader = new FileReader();
             jsonReader.onload = () => {
               try {
-                const jsonData = JSON.parse(jsonReader.result);
+                const JsonData = JSON.parse(jsonReader.result);
 
                 // process data
-                 this.processData(jsonData)
-                resolve(jsonData);
+                this.processData(JsonData)
+                resolve(JsonData);
                 ui.alert('success', 'File uploaded successfully', 'success');
             } catch (err) {
                 reject(err);
@@ -88,72 +89,60 @@ class FileHandler {
         // handle pdf and image files
         if (file.type === `application/pdf` || file.type.startsWith(`image/`)) 
         {
+          
           // convert to base64
-          const base64 = await new Promise((resolve, reject) => {
-            
-            const reader = new FileReader();
+          const base64 = await this.fileToBase64(file);
+          const cleanBase64 = base64.split(',')[1];
 
-            // onload
-            reader.onload = () => {
-              resolve(reader.result);
-            };
+          // send request to ocr Api
+          const ocrResponse = await fetch('https://api.ocr.space/parse/image', {
+            method: 'POST',
+            headers: {
+            'apikey': this.OCR_API_KEY,
+          },
+            body: this.buildFormData(cleanBase64, file.type)
+        });
 
-            // onerror
-            reader.onerror = () => {
-              reject(reader.error);
-            };
-
-            reader.readAsDataURL(file);
-
-          });
-
-            // call backend api 
-            const response = await fetch(`${window.location.origin}/api/extract-expense`, {
-              method : "POST",
-              headers : {
-                "Content-Type" : "application/json"
-              },
-              body : JSON.stringify({
-                file : base64,
-                fileType : file.type
-              })
-            })
-
-            if(!response.ok) throw new Error(`Error extracting expense from file`)
-
-            const data = await response.json();
-            const formattedData = this.formatData(data);
-
-            const expense = new Expense(
-              formattedData.description,
-              formattedData.amount,
-              formattedData.category,
-              formattedData.date
-            );
-
-
-            // validate Formatted data
-            if(expense.isValid()) {
-              expenseManager.expenses.unshift({
-                id : expense.id,
-                description: expense.description,
-                amount: expense.amount,
-                category: expense.category,
-                date: expense.date
-            });
-            ui.displayUI();
-            ui.alert('success', 'File extracted successfully', 'success');
-          } else{
-            ui.alert('danger', 'Invalid extracted data format', 'error');
+          // handle response
+          if (ocrData.IsErroredOnProcessing) {
+            ui.alert('danger', ocrData.ErrorMessage, 'error');
           }
-        }
-    }
 
-    }    catch (err) {
-            console.error(err);
-            ui.alert('danger', err.message, 'error');
+          const fullText = ocrData.ParsedResults[0].ParsedText;
+          if (!fullText.trim()) {
+          ui.alert('danger', 'No text found in the image', 'error');
+      }
+
+          // process data
+          const rawExpense = this.extractExpenseFromText(fullText);
+          this.processData(rawExpense);
         }
+      }
+    } catch (err) {
+      console.error(err);
+      ui.alert('danger', err.message, 'error');
     }
+  }
+
+  // Convert file to base64
+    fileToBase64(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  buildFormData(base64, fileType) {
+    const formData = new FormData();
+    formData.append('base64Image', `data:${fileType};base64,${base64}`);
+    formData.append('language', 'eng');
+    formData.append('isOverlayRequired', 'false');
+    formData.append('scale', 'true');
+    formData.append('OCREngine', '2');
+    return formData;
+  }
 
     // Format Expense data
     formatData(data) {
@@ -166,8 +155,8 @@ class FileHandler {
     }
 
     //processData
-    processData(JsonData) {
-    const expenses = Array.isArray(JsonData) ? data : [JsonData];
+    processData(data) {
+    const expenses = Array.isArray(data) ? data : [data];
   
   expenses.forEach(expense => {
       const formatted = this.formatData(expense); 
@@ -188,12 +177,83 @@ class FileHandler {
           date: expenseObj.date
         });
       } else {
+        console.warn('Invalid expense skipped:', item);
         ui.alert('danger', 'Invalid data format', 'error');
       }
     });
     
     ui.displayUI();
-    ui.alert('success', 'File uploaded successfully', 'success');
+    ui.alert('success', `${expenses.length} expense(s) added successfully!`, 'success');
+  }
+  
+    extractExpenseFromText(text) {
+    const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+    const lowerText = text.toLowerCase();
+
+    let amount = 0;
+    let date = new Date().toISOString().split('T')[0];
+    let description = 'Expense';
+
+    // Find largest amount
+    const amountRegex = /₦?\s?([0-9,]+(\.[0-9]{1,2})?)/g;
+    const amounts = [...text.matchAll(amountRegex)]
+      .map(m => parseFloat(m[1].replace(/,/g, '')))
+      .filter(n => n > 0);
+
+    if (amounts.length > 0) {
+      amount = Math.max(...amounts);
+    }
+
+    // Find date 
+    const datePatterns = [
+      /\b(\d{4}[-\/]\d{2}[-\/]\d{2})\b/,
+      /\b(\d{1,2}[-\/]\d{1,2}[-\/]\d{2,4})\b/,
+      /\b(january|february|march|april|may|june|july|august|september|october|november|december)\s+\d{1,2},?\s+\d{4}/i
+    ];
+
+    for (const pattern of datePatterns) {
+      const match = text.match(pattern);
+      if (match) {
+        try {
+          const parsed = new Date(match[0]);
+          if (!isNaN(parsed)) {
+            date = parsed.toISOString().split('T')[0];
+            break;
+          }
+        } catch {}
+      }
+    }
+
+    // Guess description from keywords
+    const keywords = {
+      food: ['restaurant', 'kfc', 'chicken', 'rice', 'food', 'lunch', 'dinner', 'shawarma', 'pizza'],
+      transport: ['uber', 'bolt', 'taxi', 'fuel', 'petrol', 'bus', 'transport', 'danfo'],
+      shopping: ['shoprite', 'market', 'store', 'mall', 'clothes', 'shoe'],
+      utilities: ['airtime', 'data', 'electricity', 'nepa', 'dstv', 'gotv', 'internet'],
+      entertainment: ['cinema', 'netflix', 'drink', 'bar', 'club'],
+      health: ['pharmacy', 'drug', 'hospital', 'clinic']
+    };
+
+    let detectedCategory = 'Other';
+    for (const [category, words] of Object.entries(keywords)) {
+      if (words.some(word => lowerText.includes(word))) {
+        detectedCategory = category.charAt(0).toUpperCase() + category.slice(1);
+        break;
+      }
+    }
+
+    // Fallback description: first non-empty line or "Receipt expense"
+    description = (lines && lines[0] ? lines[0].slice(0, 50) : '') || 'Receipt expense';
+    if (description.toLowerCase().includes('total') || description.length < 3) {
+      description = lines.find(l => l.length > 10 && !l.match(/₦|total|amount/i)) || 'Expense';
+    }
+
+    return {
+      description: description.trim(),
+      amount: parseFloat(amount.toFixed(2)),
+      category: detectedCategory,
+      date
+    };
   }
 }
 
