@@ -147,12 +147,12 @@ class FileHandler {
     // Format Expense data
     formatData(data) {
       return {
-      description: data.description || '',
-      amount: parseFloat(data.amount) || 0,
-      category: data.category || '',
-      date: data.date || new Date().toISOString(),
+        description: (data.description || data.Description || data.item || data.name || '').trim(),
+        amount: parseFloat(data.amount || data.Amount || data.total || data.price || 0) || 0,
+        category: (data.category || data.Category || data.type || 'Other').trim(),
+        date: data.date || data.Date || new Date().toISOString().split('T')[0],
       };
-    }
+    } 
 
     //processData
     processData(data) {
@@ -181,7 +181,7 @@ class FileHandler {
         ui.alert('danger', `Invalid expense format at item ${index + 1}`, 'error');
       }
     });
-    Store.saveExpenses(expenseManager.expenseManager.expenses);
+    Store.saveExpenses(expenseManager.expenses);
     ui.displayUI();
     ui.alert('success', `${expenses.length} expense(s) added successfully!`, 'success');
   }
@@ -479,14 +479,6 @@ document.querySelector('#clear').addEventListener('click', () => {
   Store.deleteAllExpenses();
   ui.alert('success', 'Expenses cleared successfully', 'success');
 })
-
-// delete all expenses
-document.querySelector('#clear').addEventListener('click', () => {
-    expenseManager.expenses = [];
-    Store.clearExpenses();
-  ui.alert('success', 'All expenses deleted successfully', 'success');
-})
-
 // file upload 
 document.querySelector('#browseBtn').addEventListener('click', () => {
   document.querySelector('#fileInput').click();
