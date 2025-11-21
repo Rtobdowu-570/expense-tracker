@@ -335,6 +335,12 @@ function () {
         category: detectedCategory,
         date: date
       };
+    } // clear file input once result is shown 
+
+  }, {
+    key: "clearFileInput",
+    value: function clearFileInput() {
+      document.querySelector('#fileInput').value = '';
     }
   }]);
 
@@ -468,6 +474,15 @@ function () {
       category.value = '';
       description.value = '';
       amount.value = '';
+    } // delete all expenses 
+
+  }, {
+    key: "deleteAllExpenses",
+    value: function deleteAllExpenses() {
+      var expenseList = document.querySelector('#expensesList');
+      expenseList.innerHTML = '';
+      this.expenseManager.expenses = [];
+      this.displayUI();
     } // Alert (className, message,  type)
 
   }, {
@@ -527,6 +542,11 @@ document.querySelector('#addExpense').addEventListener('click', function () {
 document.querySelector('#clear').addEventListener('click', function () {
   ui.clearExpenses();
   ui.alert('success', 'Expenses cleared successfully', 'success');
+}); // delete all expenses
+
+document.querySelector('#clear').addEventListener('click', function () {
+  ui.deleteAllExpenses();
+  ui.alert('success', 'All expenses deleted successfully', 'success');
 }); // file upload 
 
 document.querySelector('#browseBtn').addEventListener('click', function () {
