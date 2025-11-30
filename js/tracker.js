@@ -1,7 +1,7 @@
 // Expense Tracker
 class Expense {
-    constructor(description, amount, category, date) {
-    this.id = this.getDate(); 
+  constructor(description, amount, category, date) {
+    this.id = this.getDate();
     this.description = description;
     this.amount = this.parseAmount(amount);
     this.category = category;
@@ -10,13 +10,20 @@ class Expense {
   }
 
   //getDate
-getDate() {
-  return Date.now() + Math.random();
-}
+  getDate() {
+    return Date.now() + Math.random();
+  }
 
   // Validate Expense
   isValid() {
-    return this.description && typeof this.amount === 'number' && !isNaN(this.amount) && this.amount >= 0 && this.category && this.date;
+    return (
+      this.description &&
+      typeof this.amount === "number" &&
+      !isNaN(this.amount) &&
+      this.amount >= 0 &&
+      this.category &&
+      this.date
+    );
   }
 
   // Format Currency
@@ -24,11 +31,11 @@ getDate() {
     const amount = parseFloat(value);
     // Check if valid number
     if (isNaN(amount)) {
-        return 0;
+      return 0;
     }
     // Ensure positive and round to 2 decimals
     return Math.max(0, Math.round(amount * 100) / 100);
-}
+  }
 }
 class FileHandler {
   constructor() {
@@ -41,7 +48,7 @@ class FileHandler {
       "image/webp",
       "image/jpg",
     ];
-    this.OCR_API_KEY = 'K85150228188957';
+    this.OCR_API_KEY = "K85150228188957";
   }
 
   // validate file
@@ -49,83 +56,71 @@ class FileHandler {
     return this.supportedFormats.includes(file.type);
   }
 
-
   // Handle file upload
   async handleUpload(file) {
-    try {
-        // validate file
-      if (this.isValidFile(file)) {
+  try {
+    // validate file
+    if (this.isValidFile(file)) {
+      // check and handle json file
+      if (file.type === "application/json") {
+        // read json
+        return this.readFile(file);
+      }
 
-        // check and handle json file
-        if (file.type === "application/json") {
+      // handle pdf and image files
+      if (file.type === `application/pdf` || file.type.startsWith(`image/`)) {
+        // convert to base64
+        const base64 = await this.fileToBase64(file);
+        const cleanBase64 = base64.split(",")[1];
 
-            // read json
-          return new Promise((resolve, reject) => {
-            const jsonReader = new FileReader();
-            jsonReader.onload = () => {
-              try {
-                const JsonData = JSON.parse(jsonReader.result);
-
-                // process data
-                this.processData(JsonData)
-                resolve(JsonData);
-                ui.alert('success', 'File uploaded successfully', 'success');
-            } catch (err) {
-                reject(err);
-                ui.alert('danger', err.message, 'error');
-              }
-            };
-            // handle error
-            jsonReader.onerror = () => {
-              reject(jsonReader.error);
-            };
-
-            // read and resolve
-            jsonReader.readAsText(file);
-          });
-
-        }
-
-        // handle pdf and image files
-        if (file.type === `application/pdf` || file.type.startsWith(`image/`)) 
-        {
-          // convert to base64
-          const base64 = await this.fileToBase64(file);
-          const cleanBase64 = base64.split(',')[1];
-
-          // send request to ocr Api
-          const ocrResponse = await fetch('https://api.ocr.space/parse/image', {
-            method: 'POST',
-            headers: {
-            'apikey': this.OCR_API_KEY,
+        // send request to ocr Api
+        const ocrResponse = await fetch("https://api.ocr.space/parse/image", {
+          method: "POST",
+          headers: {
+            apikey: this.OCR_API_KEY,
           },
-            body: this.buildFormData(cleanBase64, file.type)
+          body: this.buildFormData(cleanBase64, file.type),
         });
 
         const ocrData = await ocrResponse.json();
-          // handle response
-          if (ocrData.IsErroredOnProcessing) {
-            ui.alert('danger', ocrData.ErrorMessage, 'error');
-          }
-
-          const fullText = ocrData.ParsedResults[0].ParsedText;
-          if (!fullText.trim()) {
-          ui.alert('danger', 'No text found in the image', 'error');
-      }
-
-          // process data
-          const rawExpense = this.extractExpenseFromText(fullText);
-          this.processData(rawExpense);
+        // handle response
+        if (ocrData.IsErroredOnProcessing) {
+          ui.alert("danger", ocrData.ErrorMessage, "error");
+          return;
         }
+
+        const fullText = ocrData.ParsedResults[0].ParsedText;
+        if (!fullText.trim()) {
+          ui.alert("danger", "No text found in the image", "error");
+          return;
+        }
+
+        // process data
+        const rawExpense = this.extractExpenseFromText(fullText);
+        return this.processData(rawExpense);
       }
-    } catch (err) {
-      console.error(err);
-      ui.alert('danger', err.message, 'error');
     }
+  } catch (err) {
+    console.error(err);
+    ui.alert("danger", err.message, "error");
   }
+}
+
+// Read JSON file
+async readFile(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsText(file);
+  }).then((result) => {
+    const jsonData = JSON.parse(result);
+    return this.processData(jsonData);
+  });
+}
 
   // Convert file to base64
-    fileToBase64(file) {
+  fileToBase64(file) {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = () => resolve(reader.result);
@@ -136,79 +131,100 @@ class FileHandler {
 
   buildFormData(base64, fileType) {
     const formData = new FormData();
-    formData.append('base64Image', `data:${fileType};base64,${base64}`);
-    formData.append('language', 'eng');
-    formData.append('isOverlayRequired', 'false');
-    formData.append('scale', 'true');
-    formData.append('OCREngine', '2');
+    formData.append("base64Image", `data:${fileType};base64,${base64}`);
+    formData.append("language", "eng");
+    formData.append("isOverlayRequired", "false");
+    formData.append("scale", "true");
+    formData.append("OCREngine", "2");
     return formData;
   }
 
-    // Format Expense data
-    formatData(data) {
-      return {
-        description: (data.description || data.Description || data.item || data.name || '').trim(),
-        amount: parseFloat(data.amount || data.Amount || data.total || data.price || 0) || 0,
-        category: (data.category || data.Category || data.type || 'Other').trim(),
-        date: data.date || data.Date || new Date().toISOString().split('T')[0],
-      };
-    } 
+  // Format Expense data
+  formatData(data) {
+    return {
+      description: (
+        data.description ||
+        data.Description ||
+        data.item ||
+        data.name ||
+        ""
+      ).trim(),
+      amount:
+        parseFloat(
+          data.amount || data.Amount || data.total || data.price || 0,
+        ) || 0,
+      category: ((data.category || data.Category || data.type || "Other").trim()).charAt(0).toUpperCase() + 
+      ((data.category || data.Category || data.type || "Other").trim()).slice(1).toLowerCase(),
+      date: data.date || data.Date || new Date().toISOString().split("T")[0],
+    };
+  }
 
-    //processData
-    processData(data) {
+  //processData
+  processData(data) {
     const expenses = Array.isArray(data) ? data : [data];
-  
-  expenses.forEach((expense, index) => {
-      const formatted = this.formatData(expense); 
+
+    expenses.forEach((expense, index) => {
+      const formatted = this.formatData(expense);
       const expenseObj = new Expense(
         formatted.description,
         formatted.amount,
         formatted.category,
-        formatted.date
+        formatted.date,
       );
 
       // Formatted data
-      if(expenseObj.isValid()) {
+      if (expenseObj.isValid()) {
         expenseManager.expenses.unshift({
           id: expenseObj.id,
           description: expenseObj.description,
           amount: expenseObj.amount,
           category: expenseObj.category,
-          date: expenseObj.date
+          date: expenseObj.date,
         });
       } else {
-        console.warn('Invalid expense skipped:', `(index ${index}): `, expense);
-        ui.alert('danger', `Invalid expense format at item ${index + 1}`, 'error');
+        console.warn("Invalid expense skipped:", `(index ${index}): `, expense);
+        ui.alert(
+          "danger",
+          `Invalid expense format at item ${index + 1}`,
+          "error",
+        );
       }
     });
     Store.saveExpenses(expenseManager.expenses);
     ui.displayUI();
-    ui.alert('success', `${expenses.length} expense(s) added successfully!`, 'success');
+    ui.alert(
+      "success",
+      `${expenses.length} expense(s) added successfully!`,
+      "success",
+    );
   }
-  
-    extractExpenseFromText(text) {
-    const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+
+  extractExpenseFromText(text) {
+    const lines = text
+      .split("\n")
+      .map((l) => l.trim())
+      .filter(Boolean);
     const lowerText = text.toLowerCase();
 
     let amount = 0;
-    let date = new Date().toISOString().split('T')[0];
-    let description = 'Expense';
+    let date = new Date().toISOString().split("T")[0];
+    let description = "Expense";
 
     // Find largest amount
     const amountRegex = /₦?\s?([0-9,]+(\.[0-9]{1,2})?)/g;
     const amounts = [...text.matchAll(amountRegex)]
-      .map(m => parseFloat(m[1].replace(/,/g, '')))
-      .filter(n => n > 0);
+      .map((m) => parseFloat(m[1].replace(/,/g, "")))
+      .filter((n) => n > 0);
 
     if (amounts.length > 0) {
       amount = Math.max(...amounts);
     }
 
-    // Find date 
+    // Find date
     const datePatterns = [
       /\b(\d{4}[-\/]\d{2}[-\/]\d{2})\b/,
       /\b(\d{1,2}[-\/]\d{1,2}[-\/]\d{2,4})\b/,
-      /\b(january|february|march|april|may|june|july|august|september|october|november|december)\s+\d{1,2},?\s+\d{4}/i
+      /\b(january|february|march|april|may|june|july|august|september|october|november|december)\s+\d{1,2},?\s+\d{4}/i,
     ];
 
     for (const pattern of datePatterns) {
@@ -217,7 +233,7 @@ class FileHandler {
         try {
           const parsed = new Date(match[0]);
           if (!isNaN(parsed)) {
-            date = parsed.toISOString().split('T')[0];
+            date = parsed.toISOString().split("T")[0];
             break;
           }
         } catch {}
@@ -226,42 +242,71 @@ class FileHandler {
 
     // Guess description from keywords
     const keywords = {
-      food: ['restaurant', 'kfc', 'chicken', 'rice', 'food', 'lunch', 'dinner', 'shawarma', 'pizza'],
-      transport: ['uber', 'bolt', 'taxi', 'fuel', 'petrol', 'bus', 'transport', 'danfo'],
-      shopping: ['shoprite', 'market', 'store', 'mall', 'clothes', 'shoe'],
-      utilities: ['airtime', 'data', 'electricity', 'nepa', 'dstv', 'gotv', 'internet'],
-      entertainment: ['cinema', 'netflix', 'drink', 'bar', 'club'],
-      health: ['pharmacy', 'drug', 'hospital', 'clinic']
+      food: [
+        "restaurant",
+        "kfc",
+        "chicken",
+        "rice",
+        "food",
+        "lunch",
+        "dinner",
+        "shawarma",
+        "pizza",
+      ],
+      transport: [
+        "uber",
+        "bolt",
+        "taxi",
+        "fuel",
+        "petrol",
+        "bus",
+        "transport",
+        "danfo",
+      ],
+      shopping: ["shoprite", "market", "store", "mall", "clothes", "shoe"],
+      utilities: [
+        "airtime",
+        "data",
+        "electricity",
+        "nepa",
+        "dstv",
+        "gotv",
+        "internet",
+      ],
+      entertainment: ["cinema", "netflix", "drink", "bar", "club"],
+      health: ["pharmacy", "drug", "hospital", "clinic"],
     };
 
-    let detectedCategory = 'Other';
+    let detectedCategory = "Other";
     for (const [category, words] of Object.entries(keywords)) {
-      if (words.some(word => lowerText.includes(word))) {
+      if (words.some((word) => lowerText.includes(word))) {
         detectedCategory = category.charAt(0).toUpperCase() + category.slice(1);
         break;
       }
     }
 
     // Fallback description: first non-empty line or "Receipt expense"
-    description = (lines && lines[0] ? lines[0].slice(0, 50) : '') || 'Receipt expense';
-    if (description.toLowerCase().includes('total') || description.length < 3) {
-      description = lines.find(l => l.length > 10 && !l.match(/₦|total|amount/i)) || 'Expense';
+    description =
+      (lines && lines[0] ? lines[0].slice(0, 50) : "") || "Receipt expense";
+    if (description.toLowerCase().includes("total") || description.length < 3) {
+      description =
+        lines.find((l) => l.length > 10 && !l.match(/₦|total|amount/i)) ||
+        "Expense";
     }
 
     return {
       description: description.trim(),
       amount: parseFloat(amount.toFixed(2)),
       category: detectedCategory,
-      date
+      date,
     };
   }
 
-  // clear file input once result is shown 
+  // clear file input once result is shown
   clearFileInput() {
-    document.querySelector('#fileInput').value = '';
+    document.querySelector("#fileInput").value = "";
   }
 }
-
 
 // Expense Manager
 class ExpenseManager {
@@ -273,163 +318,253 @@ class ExpenseManager {
   }
 
   totalNumberOfExpenses() {
-    return this.expenses.length
+    return this.expenses.length;
   }
 
   averageExpense() {
-    return this.expenses.length > 0 ? this.totalExpenses() / this.totalNumberOfExpenses() : 0;
+    return this.expenses.length > 0
+      ? this.totalExpenses() / this.totalNumberOfExpenses()
+      : 0;
   }
 
   // Top Category (occurs most)
   topCategory() {
-  // Check BEFORE the loop, not inside it
-  if (this.expenses.length === 0) {
-    return '-';
-  }
-
-  const categoryCount = {};
-  this.expenses.forEach((expense) => {
-    if (categoryCount[expense.category]) {
-      categoryCount[expense.category] += 1;            
-    } else {
-      categoryCount[expense.category] = 1;
+    // Check BEFORE the loop, not inside it
+    if (this.expenses.length === 0) {
+      return "-";
     }
-  });
-  
-  // Also check if categoryCount is empty
-  const entries = Object.entries(categoryCount);
-  if (entries.length === 0) {
-    return '-';
-  }
-  
-  return entries.reduce((a, b) => (a[1] > b[1] ? a : b))[0];
-}
+
+    const categoryCount = {};
+    this.expenses.forEach((expense) => {
+  const cat = (expense.category || "Other").charAt(0).toUpperCase() + (expense.category || "Other").slice(1).toLowerCase();
+  categoryCount[cat] = (categoryCount[cat] || 0) + 1;
+});
+
+// Also check if categoryCount is empty
+const entries = Object.entries(categoryCount);
+if (entries.length === 0) {
+  return "-";
 }
 
+return entries.reduce((a, b) => (a[1] > b[1] ? a : b))[0];
+
+  }
+}
 
 // UI
 class UI {
   constructor(expenseManager) {
     this.expenseManager = expenseManager;
+    this.chartInstance = null;
   }
 
   displayUI() {
-    const totalExpense = document.querySelector('#totalExpenses');
-    const transactionCount = document.querySelector('#transactionCount');
-    const averageTransaction = document.querySelector('#avgTransaction')
-    const expenseList = document.querySelector('#expensesList')
-    const topCategory = document.querySelector('#topCategory')
+    const totalExpense = document.querySelector("#totalExpenses");
+    const transactionCount = document.querySelector("#transactionCount");
+    const averageTransaction = document.querySelector("#avgTransaction");
+    const expenseList = document.querySelector("#expensesList");
+    const topCategory = document.querySelector("#topCategory");
 
     // output expense
-    expenseList.innerHTML = '';
+    expenseList.innerHTML = "";
 
     //loop through the expenses
     expenseManager.expenses.forEach((expense) => {
-        expenseList.innerHTML += `
+      expenseList.innerHTML += `
                 <div class="expense-item">
                     <div class="expense-date">${expense.date}</div>
                     <div class="expense-category">${expense.category}</div>
                     <div class="expense-description">${expense.description}</div>
                     <div class="expense-amount">${expense.amount}</div>
-                </div>`
+                </div>`;
     });
 
-    // display total expenses 
-    totalExpense.textContent = `₦${this.expenseManager.totalExpenses().toFixed(2)}`
+    // display total expenses
+    totalExpense.textContent = `₦${this.expenseManager.totalExpenses().toFixed(2)}`;
 
-    // transaction count 
-    transactionCount.textContent = `${this.expenseManager.totalNumberOfExpenses()}`
+    // transaction count
+    transactionCount.textContent = `${this.expenseManager.totalNumberOfExpenses()}`;
 
-    // average transaction 
+    // average transaction
     averageTransaction.textContent = `₦${this.expenseManager.averageExpense()}`;
 
     // top category
     topCategory.textContent = ` ${this.expenseManager.topCategory()}`;
-
+    this.categoryChart();
   }
-  
+
   // Add expense to the manager
   addExpense() {
-    const date = document.querySelector('#date').value;
-    const category = document.querySelector('#category').value;
-    const description = document.querySelector('#description').value;
-    const amount = new Expense('', document.querySelector('#amount').value, '', '').parseAmount(document.querySelector('#amount').value);
+    const date = document.querySelector("#date").value;
+    const category = document.querySelector("#category").value;
+    const description = document.querySelector("#description").value;
+    const amount = new Expense(
+      "",
+      document.querySelector("#amount").value,
+      "",
+      "",
+    ).parseAmount(document.querySelector("#amount").value);
 
     if (date && category && description && !isNaN(amount)) {
-      const expense = {  
+      const expense = {
         id: Date.now() + Math.random(),
-        date, 
-        category, 
-        description, 
-        amount: Math.round(amount * 100) / 100 
+        date,
+        category,
+        description,
+        amount: Math.round(amount * 100) / 100,
       };
       this.expenseManager.expenses.unshift(expense);
-      this.displayUI(); 
+      this.displayUI();
       this.clearExpenses();
     }
   }
 
-  // clear expenses
-  clearExpenses(){
-    const date = document.querySelector('#date');
-    const category = document.querySelector('#category');
-    const description = document.querySelector('#description');
-    const amount = document.querySelector('#amount');
+  // Category chat breakdown
+  categoryChart() {
+    const canvas = document.querySelector("#categoryChart");
+    if (!canvas) return;
 
-    date.value ='';
-    category.value = '';
-    description.value ='';
-    amount.value ='';
+    const ctx = canvas.getContext("2d");
+
+    if (canvas.chart) {
+      canvas.chart.destroy();
+    }
+
+    const labels = [
+      "Food",
+      "Health",
+      "Transport",
+      "Entertainment",
+      "Utilities",
+      "Shopping",
+      "Other",
+    ];
+
+    // Category occurences
+const categoryCount = this.expenseManager.expenses.reduce((acc, expense) => {
+  const cat = (expense.category || "Other").charAt(0).toUpperCase() + (expense.category || "Other").slice(1).toLowerCase();
+  acc[cat] = (acc[cat] || 0) + 1;
+  return acc;
+}, {});
+
+const data = labels.map((label) => categoryCount[label] || 0);
+
+
+    // Create chart
+    this.chartInstance = new Chart(ctx, {
+      type: "doughnut",
+      data: {
+        labels: labels,
+        datasets: [
+        {
+          data: data,
+          backgroundColor: [
+            "#FF6B6B",
+            "#4ECDC4",
+            "#45B7D1",
+            "#96CEB4",
+            "#FFEEAD",
+            "#D4A5A5",
+            "#9B9B9B",
+          ],
+          hoverOffset: 10,
+        },
+      ],
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: "right",
+            labels: {
+              padding: 20,
+              font: { size: 14 },
+            },
+          },
+          tooltip: {
+            callbacks: {
+              label: function (context) {
+                const value = context.parsed;
+                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                const percentage =
+                  total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+                return `${context.label}: ${value} (${percentage}%)`;
+              },
+            },
+          },
+        },
+      },
+    },
+  });
   }
 
-  // delete all expenses 
+
+  // clear expenses
+  clearExpenses() {
+    const date = document.querySelector("#date");
+    const category = document.querySelector("#category");
+    const description = document.querySelector("#description");
+    const amount = document.querySelector("#amount");
+
+    date.value = "";
+    category.value = "";
+    description.value = "";
+    amount.value = "";
+  }
+
+  // delete all expenses
   deleteAllExpenses() {
-    const expenseList = document.querySelector('#expensesList')
-    expenseList.innerHTML = '';
+    const expenseList = document.querySelector("#expensesList");
+    expenseList.innerHTML = "";
     this.expenseManager.expenses = [];
+    Store.clearExpenses();
+    if (this.chartInstance) {
+      this.chartInstance.destroy();
+      this.chartInstance = null;
+    }
     this.displayUI();
   }
 
   // Alert (className, message,  type)
   alert(className, message, type) {
-    try{
-    const alert = document.createElement('div');
+    try {
+      const alert = document.createElement("div");
 
-    // set classname
-    alert.className = `alert ${className}`;
+      // set classname
+      alert.className = `alert ${className}`;
 
-    // set message
-    alert.textContent = message;
+      // set message
+      alert.textContent = message;
 
-    // set type
-    alert.type = type;
+      // set type
+      alert.type = type;
 
-    if(type === 'success') {
-      alert.classList.add('success');
-    } else {
-      alert.classList.add('error');
+      if (type === "success") {
+        alert.classList.add("success");
+      } else {
+        alert.classList.add("error");
+      }
+
+      //get the container element
+      const container = document.querySelector(".container");
+      const main = document.querySelector(".main-content");
+
+      container.insertBefore(alert, main);
+      setTimeout(() => {
+        alert.remove();
+      }, 2000);
+    } catch (err) {
+      console.error(err);
     }
-
-    //get the container element
-    const container = document.querySelector('.container');
-    const main = document.querySelector('.main-content')
-
-    
-    container.insertBefore(alert, main)
-    setTimeout(() => {alert.remove();}, 2000);
-  } catch (err) {
-    console.error(err);
   }
-}
 }
 
 class Store {
-
   static saveExpenses(expenses) {
     try {
       localStorage.setItem(Store.STORAGE_KEY, JSON.stringify(expenses));
     } catch (error) {
-      ui.alert('danger', 'Failed to save expenses', 'error');
+      ui.alert("danger", "Failed to save expenses", "error");
     }
   }
 
@@ -438,7 +573,7 @@ class Store {
       const data = localStorage.getItem(Store.STORAGE_KEY);
       return data ? JSON.parse(data) : [];
     } catch (error) {
-      ui.alert('danger', 'Failed to load expenses', 'warning');
+      ui.alert("danger", "Failed to load expenses", "warning");
       return [];
     }
   }
@@ -448,49 +583,51 @@ class Store {
   }
 }
 
-Store.STORAGE_KEY = 'expenseTracker_expenses';
-
+Store.STORAGE_KEY = "expenseTracker_expenses";
 
 // Expense manager instance
-  const expenseManager = new ExpenseManager()
-  const ui = new UI(expenseManager)
-  const store = new Store();
-
+const expenseManager = new ExpenseManager();
+const ui = new UI(expenseManager);
+const store = new Store();
 
 // Event Listeners
 // on load
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener("DOMContentLoaded", () => {
   const saved = Store.loadExpenses();
   expenseManager.expenses = saved;
   ui.displayUI();
-  ui.alert('success', 'Dom loaded successfully', 'success');
-})
+  ui.categoryChart();
+  ui.alert("success", "Dom loaded successfully", "success");
+});
 
 // add expense
-document.querySelector('#addExpense').addEventListener('click', () => {
+document.querySelector("#addExpense").addEventListener("click", () => {
   ui.addExpense();
   Store.saveExpenses(expenseManager.expenses);
-  ui.alert('success', 'Expense added successfully', 'success');
-})
+  ui.alert("success", "Expense added successfully", "success");
+});
 
 // clear expenses
-document.querySelector('#clear').addEventListener('click', () => {
+document.querySelector("#clear").addEventListener("click", () => {
   ui.clearExpenses();
-  Store.deleteAllExpenses();
-  ui.alert('success', 'Expenses cleared successfully', 'success');
-})
-// file upload 
-document.querySelector('#browseBtn').addEventListener('click', () => {
-  document.querySelector('#fileInput').click();
+  ui.deleteAllExpenses();
+  Store.clearExpenses();
+  ui.alert("success", "Expenses cleared successfully", "success");
+});
+
+// file upload
+document.querySelector("#browseBtn").addEventListener("click", () => {
+  document.querySelector("#fileInput").click();
 });
 
 // Handle file selection separately
-document.querySelector('#fileInput').addEventListener('change', (e) => {
+document.querySelector("#fileInput").addEventListener("change", (e) => {
   const file = e.target.files[0];
   if (file) {
     // Display file name
-    document.querySelector('#fileNameDisplay').textContent = `Selected: ${file.name}`;
-    
+    document.querySelector("#fileNameDisplay").textContent =
+      `Selected: ${file.name}`;
+
     // Upload file
     const fileHandler = new FileHandler();
     fileHandler.handleUpload(file);
@@ -498,37 +635,38 @@ document.querySelector('#fileInput').addEventListener('change', (e) => {
 });
 
 // file upload drag and drop
-const uploadArea = document.querySelector('#uploadArea');
+const uploadArea = document.querySelector("#uploadArea");
 
-uploadArea.addEventListener('dragover', (e) => {
+uploadArea.addEventListener("dragover", (e) => {
   e.preventDefault();
-  uploadArea.classList.add('drag-over');
+  uploadArea.classList.add("drag-over");
 });
 
 // Remove highlight when dragging leaves
-uploadArea.addEventListener('dragleave', (e) => {
+uploadArea.addEventListener("dragleave", (e) => {
   e.preventDefault();
   if (e.target === uploadArea) {
-    uploadArea.classList.remove('drag-over');
+    uploadArea.classList.remove("drag-over");
   }
 });
 
 // Handle the actual file drop
-uploadArea.addEventListener('drop', (e) => {
+uploadArea.addEventListener("drop", (e) => {
   e.preventDefault();
-  uploadArea.classList.remove('drag-over');
-  
+  uploadArea.classList.remove("drag-over");
+
   // Get the dropped file
   const file = e.dataTransfer.files[0];
-  
+
   if (file) {
     // Display file name
-    document.querySelector('#fileNameDisplay').textContent = `Selected: ${file.name}`;
-    
+    document.querySelector("#fileNameDisplay").textContent =
+      `Selected: ${file.name}`;
+
     // Upload the file
     const fileHandler = new FileHandler();
     fileHandler.handleUpload(file);
   } else {
-    ui.alert('danger', 'No file selected', 'error');
+    ui.alert("danger", "No file selected", "error");
   }
 });

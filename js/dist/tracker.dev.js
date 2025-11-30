@@ -47,7 +47,7 @@ function () {
   }, {
     key: "isValid",
     value: function isValid() {
-      return this.description && typeof this.amount === 'number' && !isNaN(this.amount) && this.amount >= 0 && this.category && this.date;
+      return this.description && typeof this.amount === "number" && !isNaN(this.amount) && this.amount >= 0 && this.category && this.date;
     } // Format Currency
 
   }, {
@@ -74,7 +74,7 @@ function () {
     _classCallCheck(this, FileHandler);
 
     this.supportedFormats = ["application/json", "application/pdf", "image/png", "image/jpeg", "image/gif", "image/webp", "image/jpg"];
-    this.OCR_API_KEY = 'K85150228188957';
+    this.OCR_API_KEY = "K85150228188957";
   } // validate file
 
 
@@ -87,8 +87,6 @@ function () {
   }, {
     key: "handleUpload",
     value: function handleUpload(file) {
-      var _this = this;
-
       var base64, cleanBase64, ocrResponse, ocrData, fullText, rawExpense;
       return regeneratorRuntime.async(function handleUpload$(_context) {
         while (1) {
@@ -97,7 +95,7 @@ function () {
               _context.prev = 0;
 
               if (!this.isValidFile(file)) {
-                _context.next = 20;
+                _context.next = 24;
                 break;
               }
 
@@ -106,35 +104,11 @@ function () {
                 break;
               }
 
-              return _context.abrupt("return", new Promise(function (resolve, reject) {
-                var jsonReader = new FileReader();
-
-                jsonReader.onload = function () {
-                  try {
-                    var JsonData = JSON.parse(jsonReader.result); // process data
-
-                    _this.processData(JsonData);
-
-                    resolve(JsonData);
-                    ui.alert('success', 'File uploaded successfully', 'success');
-                  } catch (err) {
-                    reject(err);
-                    ui.alert('danger', err.message, 'error');
-                  }
-                }; // handle error
-
-
-                jsonReader.onerror = function () {
-                  reject(jsonReader.error);
-                }; // read and resolve
-
-
-                jsonReader.readAsText(file);
-              }));
+              return _context.abrupt("return", this.readFile(file));
 
             case 4:
               if (!(file.type === "application/pdf" || file.type.startsWith("image/"))) {
-                _context.next = 20;
+                _context.next = 24;
                 break;
               }
 
@@ -143,13 +117,13 @@ function () {
 
             case 7:
               base64 = _context.sent;
-              cleanBase64 = base64.split(',')[1]; // send request to ocr Api
+              cleanBase64 = base64.split(",")[1]; // send request to ocr Api
 
               _context.next = 11;
-              return regeneratorRuntime.awrap(fetch('https://api.ocr.space/parse/image', {
-                method: 'POST',
+              return regeneratorRuntime.awrap(fetch("https://api.ocr.space/parse/image", {
+                method: "POST",
                 headers: {
-                  'apikey': this.OCR_API_KEY
+                  apikey: this.OCR_API_KEY
                 },
                 body: this.buildFormData(cleanBase64, file.type)
               }));
@@ -162,37 +136,77 @@ function () {
             case 14:
               ocrData = _context.sent;
 
-              // handle response
-              if (ocrData.IsErroredOnProcessing) {
-                ui.alert('danger', ocrData.ErrorMessage, 'error');
+              if (!ocrData.IsErroredOnProcessing) {
+                _context.next = 18;
+                break;
               }
 
+              ui.alert("danger", ocrData.ErrorMessage, "error");
+              return _context.abrupt("return");
+
+            case 18:
               fullText = ocrData.ParsedResults[0].ParsedText;
 
-              if (!fullText.trim()) {
-                ui.alert('danger', 'No text found in the image', 'error');
-              } // process data
+              if (fullText.trim()) {
+                _context.next = 22;
+                break;
+              }
 
-
-              rawExpense = this.extractExpenseFromText(fullText);
-              this.processData(rawExpense);
-
-            case 20:
-              _context.next = 26;
-              break;
+              ui.alert("danger", "No text found in the image", "error");
+              return _context.abrupt("return");
 
             case 22:
-              _context.prev = 22;
-              _context.t0 = _context["catch"](0);
-              console.error(_context.t0);
-              ui.alert('danger', _context.t0.message, 'error');
+              // process data
+              rawExpense = this.extractExpenseFromText(fullText);
+              return _context.abrupt("return", this.processData(rawExpense));
+
+            case 24:
+              _context.next = 30;
+              break;
 
             case 26:
+              _context.prev = 26;
+              _context.t0 = _context["catch"](0);
+              console.error(_context.t0);
+              ui.alert("danger", _context.t0.message, "error");
+
+            case 30:
             case "end":
               return _context.stop();
           }
         }
-      }, null, this, [[0, 22]]);
+      }, null, this, [[0, 26]]);
+    } // Read JSON file
+
+  }, {
+    key: "readFile",
+    value: function readFile(file) {
+      var _this = this;
+
+      return regeneratorRuntime.async(function readFile$(_context2) {
+        while (1) {
+          switch (_context2.prev = _context2.next) {
+            case 0:
+              return _context2.abrupt("return", new Promise(function (resolve, reject) {
+                var reader = new FileReader();
+
+                reader.onload = function () {
+                  return resolve(reader.result);
+                };
+
+                reader.onerror = reject;
+                reader.readAsText(file);
+              }).then(function (result) {
+                var jsonData = JSON.parse(result);
+                return _this.processData(jsonData);
+              }));
+
+            case 1:
+            case "end":
+              return _context2.stop();
+          }
+        }
+      });
     } // Convert file to base64
 
   }, {
@@ -213,11 +227,11 @@ function () {
     key: "buildFormData",
     value: function buildFormData(base64, fileType) {
       var formData = new FormData();
-      formData.append('base64Image', "data:".concat(fileType, ";base64,").concat(base64));
-      formData.append('language', 'eng');
-      formData.append('isOverlayRequired', 'false');
-      formData.append('scale', 'true');
-      formData.append('OCREngine', '2');
+      formData.append("base64Image", "data:".concat(fileType, ";base64,").concat(base64));
+      formData.append("language", "eng");
+      formData.append("isOverlayRequired", "false");
+      formData.append("scale", "true");
+      formData.append("OCREngine", "2");
       return formData;
     } // Format Expense data
 
@@ -225,10 +239,10 @@ function () {
     key: "formatData",
     value: function formatData(data) {
       return {
-        description: (data.description || data.Description || data.item || data.name || '').trim(),
+        description: (data.description || data.Description || data.item || data.name || "").trim(),
         amount: parseFloat(data.amount || data.Amount || data.total || data.price || 0) || 0,
-        category: (data.category || data.Category || data.type || 'Other').trim(),
-        date: data.date || data.Date || new Date().toISOString().split('T')[0]
+        category: (data.category || data.Category || data.type || "Other").trim().charAt(0).toUpperCase() + (data.category || data.Category || data.type || "Other").trim().slice(1).toLowerCase(),
+        date: data.date || data.Date || new Date().toISOString().split("T")[0]
       };
     } //processData
 
@@ -252,36 +266,36 @@ function () {
             date: expenseObj.date
           });
         } else {
-          console.warn('Invalid expense skipped:', "(index ".concat(index, "): "), expense);
-          ui.alert('danger', "Invalid expense format at item ".concat(index + 1), 'error');
+          console.warn("Invalid expense skipped:", "(index ".concat(index, "): "), expense);
+          ui.alert("danger", "Invalid expense format at item ".concat(index + 1), "error");
         }
       });
       Store.saveExpenses(expenseManager.expenses);
       ui.displayUI();
-      ui.alert('success', "".concat(expenses.length, " expense(s) added successfully!"), 'success');
+      ui.alert("success", "".concat(expenses.length, " expense(s) added successfully!"), "success");
     }
   }, {
     key: "extractExpenseFromText",
     value: function extractExpenseFromText(text) {
-      var lines = text.split('\n').map(function (l) {
+      var lines = text.split("\n").map(function (l) {
         return l.trim();
       }).filter(Boolean);
       var lowerText = text.toLowerCase();
       var amount = 0;
-      var date = new Date().toISOString().split('T')[0];
-      var description = 'Expense'; // Find largest amount
+      var date = new Date().toISOString().split("T")[0];
+      var description = "Expense"; // Find largest amount
 
       var amountRegex = /₦?\s?([0-9,]+(\.[0-9]{1,2})?)/g;
 
       var amounts = _toConsumableArray(text.matchAll(amountRegex)).map(function (m) {
-        return parseFloat(m[1].replace(/,/g, ''));
+        return parseFloat(m[1].replace(/,/g, ""));
       }).filter(function (n) {
         return n > 0;
       });
 
       if (amounts.length > 0) {
         amount = Math.max.apply(Math, _toConsumableArray(amounts));
-      } // Find date 
+      } // Find date
 
 
       var datePatterns = [/\b(\d{4}[-\/]\d{2}[-\/]\d{2})\b/, /\b(\d{1,2}[-\/]\d{1,2}[-\/]\d{2,4})\b/, /\b(january|february|march|april|may|june|july|august|september|october|november|december)\s+\d{1,2},?\s+\d{4}/i];
@@ -295,7 +309,7 @@ function () {
             var parsed = new Date(match[0]);
 
             if (!isNaN(parsed)) {
-              date = parsed.toISOString().split('T')[0];
+              date = parsed.toISOString().split("T")[0];
               break;
             }
           } catch (_unused) {}
@@ -304,14 +318,14 @@ function () {
 
 
       var keywords = {
-        food: ['restaurant', 'kfc', 'chicken', 'rice', 'food', 'lunch', 'dinner', 'shawarma', 'pizza'],
-        transport: ['uber', 'bolt', 'taxi', 'fuel', 'petrol', 'bus', 'transport', 'danfo'],
-        shopping: ['shoprite', 'market', 'store', 'mall', 'clothes', 'shoe'],
-        utilities: ['airtime', 'data', 'electricity', 'nepa', 'dstv', 'gotv', 'internet'],
-        entertainment: ['cinema', 'netflix', 'drink', 'bar', 'club'],
-        health: ['pharmacy', 'drug', 'hospital', 'clinic']
+        food: ["restaurant", "kfc", "chicken", "rice", "food", "lunch", "dinner", "shawarma", "pizza"],
+        transport: ["uber", "bolt", "taxi", "fuel", "petrol", "bus", "transport", "danfo"],
+        shopping: ["shoprite", "market", "store", "mall", "clothes", "shoe"],
+        utilities: ["airtime", "data", "electricity", "nepa", "dstv", "gotv", "internet"],
+        entertainment: ["cinema", "netflix", "drink", "bar", "club"],
+        health: ["pharmacy", "drug", "hospital", "clinic"]
       };
-      var detectedCategory = 'Other';
+      var detectedCategory = "Other";
 
       for (var _i2 = 0, _Object$entries = Object.entries(keywords); _i2 < _Object$entries.length; _i2++) {
         var _Object$entries$_i = _slicedToArray(_Object$entries[_i2], 2),
@@ -327,12 +341,12 @@ function () {
       } // Fallback description: first non-empty line or "Receipt expense"
 
 
-      description = (lines && lines[0] ? lines[0].slice(0, 50) : '') || 'Receipt expense';
+      description = (lines && lines[0] ? lines[0].slice(0, 50) : "") || "Receipt expense";
 
-      if (description.toLowerCase().includes('total') || description.length < 3) {
+      if (description.toLowerCase().includes("total") || description.length < 3) {
         description = lines.find(function (l) {
           return l.length > 10 && !l.match(/₦|total|amount/i);
-        }) || 'Expense';
+        }) || "Expense";
       }
 
       return {
@@ -341,12 +355,12 @@ function () {
         category: detectedCategory,
         date: date
       };
-    } // clear file input once result is shown 
+    } // clear file input once result is shown
 
   }, {
     key: "clearFileInput",
     value: function clearFileInput() {
-      document.querySelector('#fileInput').value = '';
+      document.querySelector("#fileInput").value = "";
     }
   }]);
 
@@ -386,22 +400,19 @@ function () {
     value: function topCategory() {
       // Check BEFORE the loop, not inside it
       if (this.expenses.length === 0) {
-        return '-';
+        return "-";
       }
 
       var categoryCount = {};
       this.expenses.forEach(function (expense) {
-        if (categoryCount[expense.category]) {
-          categoryCount[expense.category] += 1;
-        } else {
-          categoryCount[expense.category] = 1;
-        }
+        var cat = (expense.category || "Other").charAt(0).toUpperCase() + (expense.category || "Other").slice(1).toLowerCase();
+        categoryCount[cat] = (categoryCount[cat] || 0) + 1;
       }); // Also check if categoryCount is empty
 
       var entries = Object.entries(categoryCount);
 
       if (entries.length === 0) {
-        return '-';
+        return "-";
       }
 
       return entries.reduce(function (a, b) {
@@ -421,39 +432,41 @@ function () {
     _classCallCheck(this, UI);
 
     this.expenseManager = expenseManager;
+    this.chartInstance = null;
   }
 
   _createClass(UI, [{
     key: "displayUI",
     value: function displayUI() {
-      var totalExpense = document.querySelector('#totalExpenses');
-      var transactionCount = document.querySelector('#transactionCount');
-      var averageTransaction = document.querySelector('#avgTransaction');
-      var expenseList = document.querySelector('#expensesList');
-      var topCategory = document.querySelector('#topCategory'); // output expense
+      var totalExpense = document.querySelector("#totalExpenses");
+      var transactionCount = document.querySelector("#transactionCount");
+      var averageTransaction = document.querySelector("#avgTransaction");
+      var expenseList = document.querySelector("#expensesList");
+      var topCategory = document.querySelector("#topCategory"); // output expense
 
-      expenseList.innerHTML = ''; //loop through the expenses
+      expenseList.innerHTML = ""; //loop through the expenses
 
       expenseManager.expenses.forEach(function (expense) {
         expenseList.innerHTML += "\n                <div class=\"expense-item\">\n                    <div class=\"expense-date\">".concat(expense.date, "</div>\n                    <div class=\"expense-category\">").concat(expense.category, "</div>\n                    <div class=\"expense-description\">").concat(expense.description, "</div>\n                    <div class=\"expense-amount\">").concat(expense.amount, "</div>\n                </div>");
-      }); // display total expenses 
+      }); // display total expenses
 
-      totalExpense.textContent = "\u20A6".concat(this.expenseManager.totalExpenses().toFixed(2)); // transaction count 
+      totalExpense.textContent = "\u20A6".concat(this.expenseManager.totalExpenses().toFixed(2)); // transaction count
 
-      transactionCount.textContent = "".concat(this.expenseManager.totalNumberOfExpenses()); // average transaction 
+      transactionCount.textContent = "".concat(this.expenseManager.totalNumberOfExpenses()); // average transaction
 
       averageTransaction.textContent = "\u20A6".concat(this.expenseManager.averageExpense()); // top category
 
       topCategory.textContent = " ".concat(this.expenseManager.topCategory());
+      this.categoryChart();
     } // Add expense to the manager
 
   }, {
     key: "addExpense",
     value: function addExpense() {
-      var date = document.querySelector('#date').value;
-      var category = document.querySelector('#category').value;
-      var description = document.querySelector('#description').value;
-      var amount = new Expense('', document.querySelector('#amount').value, '', '').parseAmount(document.querySelector('#amount').value);
+      var date = document.querySelector("#date").value;
+      var category = document.querySelector("#category").value;
+      var description = document.querySelector("#description").value;
+      var amount = new Expense("", document.querySelector("#amount").value, "", "").parseAmount(document.querySelector("#amount").value);
 
       if (date && category && description && !isNaN(amount)) {
         var expense = {
@@ -467,27 +480,96 @@ function () {
         this.displayUI();
         this.clearExpenses();
       }
+    } // Category chat breakdown
+
+  }, {
+    key: "categoryChart",
+    value: function categoryChart() {
+      var canvas = document.querySelector("#categoryChart");
+      if (!canvas) return;
+      var ctx = canvas.getContext("2d");
+
+      if (canvas.chart) {
+        canvas.chart.destroy();
+      }
+
+      var labels = ["Food", "Health", "Transport", "Entertainment", "Utilities", "Shopping", "Other"]; // Category occurences
+
+      var categoryCount = this.expenseManager.expenses.reduce(function (acc, expense) {
+        var cat = (expense.category || "Other").charAt(0).toUpperCase() + (expense.category || "Other").slice(1).toLowerCase();
+        acc[cat] = (acc[cat] || 0) + 1;
+        return acc;
+      }, {});
+      var data = labels.map(function (label) {
+        return categoryCount[label] || 0;
+      }); // Create chart
+
+      this.chartInstance = new Chart(ctx, {
+        type: "doughnut",
+        data: {
+          labels: labels,
+          datasets: [{
+            data: data,
+            backgroundColor: ["#FF6B6B", "#4ECDC4", "#45B7D1", "#96CEB4", "#FFEEAD", "#D4A5A5", "#9B9B9B"],
+            hoverOffset: 10
+          }],
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                position: "right",
+                labels: {
+                  padding: 20,
+                  font: {
+                    size: 14
+                  }
+                }
+              },
+              tooltip: {
+                callbacks: {
+                  label: function label(context) {
+                    var value = context.parsed;
+                    var total = context.dataset.data.reduce(function (a, b) {
+                      return a + b;
+                    }, 0);
+                    var percentage = total > 0 ? (value / total * 100).toFixed(1) : 0;
+                    return "".concat(context.label, ": ").concat(value, " (").concat(percentage, "%)");
+                  }
+                }
+              }
+            }
+          }
+        }
+      });
     } // clear expenses
 
   }, {
     key: "clearExpenses",
     value: function clearExpenses() {
-      var date = document.querySelector('#date');
-      var category = document.querySelector('#category');
-      var description = document.querySelector('#description');
-      var amount = document.querySelector('#amount');
-      date.value = '';
-      category.value = '';
-      description.value = '';
-      amount.value = '';
-    } // delete all expenses 
+      var date = document.querySelector("#date");
+      var category = document.querySelector("#category");
+      var description = document.querySelector("#description");
+      var amount = document.querySelector("#amount");
+      date.value = "";
+      category.value = "";
+      description.value = "";
+      amount.value = "";
+    } // delete all expenses
 
   }, {
     key: "deleteAllExpenses",
     value: function deleteAllExpenses() {
-      var expenseList = document.querySelector('#expensesList');
-      expenseList.innerHTML = '';
+      var expenseList = document.querySelector("#expensesList");
+      expenseList.innerHTML = "";
       this.expenseManager.expenses = [];
+      Store.clearExpenses();
+
+      if (this.chartInstance) {
+        this.chartInstance.destroy();
+        this.chartInstance = null;
+      }
+
       this.displayUI();
     } // Alert (className, message,  type)
 
@@ -495,7 +577,7 @@ function () {
     key: "alert",
     value: function alert(className, message, type) {
       try {
-        var alert = document.createElement('div'); // set classname
+        var alert = document.createElement("div"); // set classname
 
         alert.className = "alert ".concat(className); // set message
 
@@ -503,15 +585,15 @@ function () {
 
         alert.type = type;
 
-        if (type === 'success') {
-          alert.classList.add('success');
+        if (type === "success") {
+          alert.classList.add("success");
         } else {
-          alert.classList.add('error');
+          alert.classList.add("error");
         } //get the container element
 
 
-        var container = document.querySelector('.container');
-        var main = document.querySelector('.main-content');
+        var container = document.querySelector(".container");
+        var main = document.querySelector(".main-content");
         container.insertBefore(alert, main);
         setTimeout(function () {
           alert.remove();
@@ -538,7 +620,7 @@ function () {
       try {
         localStorage.setItem(Store.STORAGE_KEY, JSON.stringify(expenses));
       } catch (error) {
-        ui.alert('danger', 'Failed to save expenses', 'error');
+        ui.alert("danger", "Failed to save expenses", "error");
       }
     }
   }, {
@@ -548,7 +630,7 @@ function () {
         var data = localStorage.getItem(Store.STORAGE_KEY);
         return data ? JSON.parse(data) : [];
       } catch (error) {
-        ui.alert('danger', 'Failed to load expenses', 'warning');
+        ui.alert("danger", "Failed to load expenses", "warning");
         return [];
       }
     }
@@ -562,76 +644,78 @@ function () {
   return Store;
 }();
 
-Store.STORAGE_KEY = 'expenseTracker_expenses'; // Expense manager instance
+Store.STORAGE_KEY = "expenseTracker_expenses"; // Expense manager instance
 
 var expenseManager = new ExpenseManager();
 var ui = new UI(expenseManager);
 var store = new Store(); // Event Listeners
 // on load
 
-document.addEventListener('DOMContentLoaded', function () {
+document.addEventListener("DOMContentLoaded", function () {
   var saved = Store.loadExpenses();
   expenseManager.expenses = saved;
   ui.displayUI();
-  ui.alert('success', 'Dom loaded successfully', 'success');
+  ui.categoryChart();
+  ui.alert("success", "Dom loaded successfully", "success");
 }); // add expense
 
-document.querySelector('#addExpense').addEventListener('click', function () {
+document.querySelector("#addExpense").addEventListener("click", function () {
   ui.addExpense();
   Store.saveExpenses(expenseManager.expenses);
-  ui.alert('success', 'Expense added successfully', 'success');
+  ui.alert("success", "Expense added successfully", "success");
 }); // clear expenses
 
-document.querySelector('#clear').addEventListener('click', function () {
+document.querySelector("#clear").addEventListener("click", function () {
   ui.clearExpenses();
-  Store.deleteAllExpenses();
-  ui.alert('success', 'Expenses cleared successfully', 'success');
-}); // file upload 
+  ui.deleteAllExpenses();
+  Store.clearExpenses();
+  ui.alert("success", "Expenses cleared successfully", "success");
+}); // file upload
 
-document.querySelector('#browseBtn').addEventListener('click', function () {
-  document.querySelector('#fileInput').click();
+document.querySelector("#browseBtn").addEventListener("click", function () {
+  document.querySelector("#fileInput").click();
 }); // Handle file selection separately
 
-document.querySelector('#fileInput').addEventListener('change', function (e) {
+document.querySelector("#fileInput").addEventListener("change", function (e) {
   var file = e.target.files[0];
 
   if (file) {
     // Display file name
-    document.querySelector('#fileNameDisplay').textContent = "Selected: ".concat(file.name); // Upload file
+    document.querySelector("#fileNameDisplay").textContent = "Selected: ".concat(file.name); // Upload file
 
     var fileHandler = new FileHandler();
     fileHandler.handleUpload(file);
   }
 }); // file upload drag and drop
 
-var uploadArea = document.querySelector('#uploadArea');
-uploadArea.addEventListener('dragover', function (e) {
+var uploadArea = document.querySelector("#uploadArea");
+uploadArea.addEventListener("dragover", function (e) {
   e.preventDefault();
-  uploadArea.classList.add('drag-over');
+  uploadArea.classList.add("drag-over");
 }); // Remove highlight when dragging leaves
 
-uploadArea.addEventListener('dragleave', function (e) {
+uploadArea.addEventListener("dragleave", function (e) {
   e.preventDefault();
 
   if (e.target === uploadArea) {
-    uploadArea.classList.remove('drag-over');
+    uploadArea.classList.remove("drag-over");
   }
 }); // Handle the actual file drop
 
-uploadArea.addEventListener('drop', function (e) {
+uploadArea.addEventListener("drop", function (e) {
   e.preventDefault();
-  uploadArea.classList.remove('drag-over'); // Get the dropped file
+  uploadArea.classList.remove("drag-over"); // Get the dropped file
 
   var file = e.dataTransfer.files[0];
 
   if (file) {
     // Display file name
-    document.querySelector('#fileNameDisplay').textContent = "Selected: ".concat(file.name); // Upload the file
+    document.querySelector("#fileNameDisplay").textContent = "Selected: ".concat(file.name); // Upload the file
 
     var fileHandler = new FileHandler();
     fileHandler.handleUpload(file);
   } else {
-    ui.alert('danger', 'No file selected', 'error');
+    ui.alert("danger", "No file selected", "error");
   }
 });
 //# sourceMappingURL=tracker.dev.js.map
