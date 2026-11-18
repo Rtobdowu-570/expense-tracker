@@ -1,0 +1,1049 @@
+/* ---------- Tokens ---------- */
+:root {
+  --accent: #1a1c1c;
+  --ink: #1a1c1c;
+  --ink-label: #444748;
+  --ink-muted: #5f6262;
+  --line: #e4e6e6;
+  --line-soft: #f0f1f1;
+  --line-input: #c4c7c7;
+  --surface: #ffffff;
+  --surface-band: #fbfbfb;
+  --page: #f9f9f9;
+  --danger: #b3261b;
+
+  --radius: 8px;
+  --content-width: 1100px;
+  --gutter: 24px;
+}
+
+/* ---------- Base ---------- */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--page);
+  color: var(--ink);
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 15px;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, p, ul {
+  margin: 0;
+}
+
+button,
+input,
+select {
+  font-family: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* ---------- Shared button ---------- */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: var(--radius);
+  background: var(--accent);
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: filter 0.15s ease;
+}
+
+.btn-primary:hover {
+  filter: brightness(1.15);
+}
+
+.btn-primary:focus-visible {
+  outline-color: var(--accent);
+}
+
+/* ==========================================================================
+   TopBar
+   ========================================================================== */
+.topbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px max(var(--gutter), calc((100% - var(--content-width)) / 2 + var(--gutter)));
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+}
+
+.topbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.topbar-mark {
+  position: relative;
+  flex: 0 0 auto;
+  width: 26px;
+  height: 26px;
+  border-radius: var(--radius);
+  background: var(--ink);
+}
+
+.topbar-mark::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 9px;
+  height: 9px;
+  border: 2px solid #ffffff;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.topbar-name {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.topbar-month {
+  font-size: 15px;
+  color: var(--ink-muted);
+}
+
+/* ==========================================================================
+   SummaryStats
+   ========================================================================== */
+.stats {
+  display: flex;
+  flex-wrap: wrap;
+  margin-top: 28px;
+}
+
+.money-stats,
+.expense-stats,
+.category-stats {
+  flex: 1 1 210px;
+  min-width: 0;
+}
+
+.money-stats {
+  padding-right: 32px;
+}
+
+.expense-stats {
+  padding: 0 32px;
+  border-left: 1px solid var(--line);
+}
+
+.category-stats {
+  padding-left: 32px;
+  border-left: 1px solid var(--line);
+}
+
+.stats-heading {
+  font-size: 13px;
+  color: var(--ink-muted);
+}
+
+.stats-result {
+  margin-top: 4px;
+  font-size: 32px;
+  line-height: 40px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.stats-info {
+  margin-top: 4px;
+  font-size: 13px;
+  color: var(--ink-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ==========================================================================
+   ExpenseForm
+   ========================================================================== */
+.expense-form {
+  flex: 0 1 360px;
+  min-width: 300px;
+  padding: 24px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.expense-form .expense-header h2 {
+  font-size: 18px;
+  line-height: 24px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.expense-form .expense-header p {
+  margin-top: 4px;
+  font-size: 13px;
+  color: var(--ink-muted);
+}
+
+.expense-inputs {
+  margin-top: 24px;
+}
+
+.expense-inputs > div + div {
+  margin-top: 18px;
+}
+
+.expense-form label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--ink-label);
+}
+
+.expense-form input,
+.expense-form select {
+  width: 100%;
+  padding: 13px 14px;
+  border: 1px solid var(--line-input);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 15px;
+  line-height: 22px;
+}
+
+.expense-form input::placeholder {
+  color: var(--ink-muted);
+  opacity: 0.8;
+}
+
+.expense-form input:focus,
+.expense-form select:focus {
+  outline: none;
+  border-color: var(--ink);
+  box-shadow: 0 0 0 1px var(--ink);
+}
+
+/* Amount: large figure with a "$" prefix drawn by the wrapper */
+.expense-form .expense-amount {
+  position: relative;
+}
+
+.expense-form .expense-amount::before {
+  content: "$";
+  position: absolute;
+  top: 24px;               /* label height (18) + margin (6) */
+  left: 14px;
+  display: flex;
+  align-items: center;
+  height: 50px;            /* matches the input height below */
+  font-size: 18px;
+  color: var(--ink-muted);
+  pointer-events: none;
+}
+
+.expense-form .expense-amount input {
+  height: 50px;
+  padding: 0 14px 0 32px;
+  font-size: 18px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+.expense-form input[aria-invalid="true"] {
+  border-color: var(--danger);
+}
+
+.field-error {
+  margin-top: 6px;
+  font-size: 13px;
+  color: var(--danger);
+}
+
+/* Select: custom chevron */
+.expense-form select,
+.filter select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 36px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%235f6262' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+}
+
+.expense-form input[type="date"] {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Note: label row with "Optional" on the right */
+.note-text {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.note-text label {
+  margin-bottom: 0;
+}
+
+.optional {
+  font-size: 13px;
+  color: var(--ink-muted);
+}
+
+.expense-form .btn-primary {
+  width: 100%;
+  min-height: 48px;
+  margin-top: 24px;
+  font-size: 15px;
+}
+
+/* ==========================================================================
+   ExpenseList
+   ========================================================================== */
+.expense-tab {
+  flex: 999 1 520px;
+  min-width: 0;
+}
+
+.expense-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.expense-heading .expense-header-text {
+  font-size: 18px;
+  line-height: 24px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.expense-total-count {
+  font-size: 13px;
+  color: var(--ink-muted);
+}
+
+/* No overflow:hidden so the row menu is never clipped by the card */
+.expense-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+/* ==========================================================================
+   FilterBar
+   ========================================================================== */
+.filter-tab {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--line);
+  border-radius: var(--radius) var(--radius) 0 0;
+}
+
+.filter {
+  flex: 0 1 170px;
+  min-width: 0;
+}
+
+.filter:first-child {
+  flex: 1 1 200px;
+}
+
+.filter input,
+.filter select {
+  width: 100%;
+  min-height: 44px;
+  padding: 11px 12px;
+  border: 1px solid var(--line-input);
+  border-radius: var(--radius);
+  background-color: var(--surface);
+  color: var(--ink);
+  font-size: 14px;
+}
+
+.filter select {
+  padding-right: 34px;
+  background-position: right 12px center;
+}
+
+.filter input[type="date"] {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Search field with magnifier icon */
+.filter:first-child input {
+  padding-left: 36px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='15' height='15' viewBox='0 0 24 24' fill='none' stroke='%235f6262' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m20 20-3.5-3.5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: 12px center;
+}
+
+.filter input:focus,
+.filter select:focus {
+  outline: none;
+  border-color: var(--ink);
+  box-shadow: 0 0 0 1px var(--ink);
+}
+
+/* ==========================================================================
+   DateGroup
+   ========================================================================== */
+.date-bar {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 20px;
+  background: var(--surface-band);
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.current-date {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-label);
+}
+
+.sub-total {
+  font-size: 13px;
+  color: var(--ink-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.expense-rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* ==========================================================================
+   ExpenseItem
+   ========================================================================== */
+.expense-details {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 12px 12px 20px;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.date-group:last-child .expense-details:last-child {
+  border-bottom: 0;
+}
+
+.expense-info {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.expense-color {
+  flex: 0 0 auto;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.expense-info-text {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.expense-info-text .expense-header-text {
+  font-size: 15px;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.expense-text {
+  display: flex;
+  gap: 6px;
+  margin-top: 2px;
+  font-size: 13px;
+  color: var(--ink-muted);
+}
+
+.expense-text .date-text::before {
+  content: "\00b7";
+  margin-right: 6px;
+}
+
+/* Amount cell + "..." button (also the anchor for RowMenu) */
+.expense-details .expense-amount {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 0 0 auto;
+  gap: 2px;
+}
+
+.amount-text {
+  font-size: 15px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.dropdown {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--ink-muted);
+  font-size: 18px;
+  line-height: 1;
+  letter-spacing: 1px;
+}
+
+.dropdown:hover,
+.dropdown[aria-expanded="true"] {
+  background: var(--line-soft);
+  color: var(--ink);
+}
+
+/* ==========================================================================
+   RowMenu
+   ========================================================================== */
+.rowmenu {
+  position: absolute;
+  top: calc(100% - 2px);
+  right: 0;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  min-width: 150px;
+  padding: 4px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 24px rgba(26, 28, 28, 0.12);
+}
+
+.rowmenu button {
+  min-height: 40px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  font-size: 14px;
+  text-align: left;
+}
+
+.rowmenu button:hover {
+  background: var(--line-soft);
+}
+
+.rowmenu .delete-btn {
+  color: var(--danger);
+}
+
+/* ==========================================================================
+   EmptyState
+   first-run: no expenses exist at all (roomier, no action)
+   no-match:  expenses exist but filters hide them (shorter, "Clear filters")
+   ========================================================================== */
+.empty-state {
+  padding: 56px 32px;
+  text-align: center;
+}
+
+.empty-state:has(.empty-hint) {
+  padding: 72px 32px;
+}
+
+.empty-title {
+  font-size: 15px;
+  color: var(--ink-label);
+}
+
+.empty-hint {
+  margin-top: 6px;
+  font-size: 14px;
+  color: var(--ink-muted);
+}
+
+.empty-action {
+  min-height: 44px;
+  margin-top: 10px;
+  padding: 0 16px;
+  border: 0;
+  background: transparent;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* ==========================================================================
+   UndoBar
+   Floating snackbar shown after a delete
+   ========================================================================== */
+.undo-bar {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: max-content;
+  max-width: calc(100vw - 32px);
+  padding: 4px 4px 4px 18px;
+  border-radius: var(--radius);
+  background: var(--ink);
+  color: #ffffff;
+  font-size: 14px;
+  box-shadow: 0 8px 24px rgba(26, 28, 28, 0.25);
+  transform: translateX(-50%);
+}
+
+.undo-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.undo-btn {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.undo-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.undo-bar :focus-visible {
+  outline-color: #ffffff;
+  outline-offset: -2px;
+}
+
+/* ==========================================================================
+   App layout (App.jsx: .app > .page > SummaryStats + .columns)
+   ========================================================================== */
+.app {
+  min-height: 100vh;
+}
+
+.page {
+  max-width: var(--content-width);
+  margin: 0 auto;
+  padding: 40px var(--gutter) 72px;
+}
+
+/* Divider under the stats row */
+.page > .stats {
+  margin-top: 0;
+  padding-bottom: 32px;
+  border-bottom: 1px solid var(--line);
+}
+
+/* Form on the left, list on the right; wraps under 900px or so */
+.columns {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 48px;
+  margin-top: 32px;
+}
+
+/* ==========================================================================
+   ReportView
+   ========================================================================== */
+body:has(.report-page) {
+  background: var(--surface);
+}
+
+.report-page {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 56px 64px 64px;
+  background: var(--surface);
+}
+
+.report-page hr {
+  margin: 32px 0;
+  border: 0;
+  border-top: 1px solid var(--line);
+}
+
+/* last hr sits above the footer */
+.report-page hr:last-of-type {
+  margin: 40px 0 0;
+}
+
+/* --- Actions row --- */
+.report-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 36px;
+}
+
+.report-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.back-button,
+.print-button,
+.download-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.back-button {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+}
+
+.back-button:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.print-button,
+.download-button {
+  padding: 0 18px;
+  border-radius: var(--radius);
+}
+
+.print-button {
+  border: 1px solid var(--line-input);
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.print-button:hover {
+  background: var(--page);
+}
+
+.download-button {
+  border: 0;
+  background: var(--accent);
+  color: #ffffff;
+}
+
+.download-button:hover {
+  filter: brightness(1.15);
+}
+
+/* --- Header --- */
+.report-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.report-header > div {
+  min-width: 0;
+}
+
+.report-label,
+.report-total > p {
+  font-size: 13px;
+  color: var(--ink-muted);
+}
+
+.report-header h1,
+.report-total > :last-child {
+  margin: 4px 0 0;
+  font-size: 32px;
+  line-height: 40px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.report-total {
+  text-align: right;
+}
+
+.report-total > :last-child {
+  font-variant-numeric: tabular-nums;
+}
+
+.report-meta {
+  margin-top: 6px;
+  font-size: 14px;
+  color: var(--ink-label);
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- Sections --- */
+.report-section h2 {
+  margin-bottom: 14px;
+  font-size: 18px;
+  line-height: 24px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.report-empty {
+  font-size: 14px;
+  color: var(--ink-muted);
+}
+
+/* --- Category breakdown (CategoryBar.jsx) --- */
+.breakdown-text {
+  margin-bottom: 18px;
+  font-size: 18px;
+  line-height: 24px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.breakdown-bar {
+  display: flex;
+  gap: 3px;
+  height: 10px;
+  margin-bottom: 24px;
+}
+
+.breakdown-segment {
+  height: 100%;
+  border-radius: 5px;
+}
+
+.breakdown-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line-soft);
+  font-size: 15px;
+}
+
+.breakdown-row:last-child {
+  border-bottom: 0;
+}
+
+.category {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.category-colour {
+  flex: 0 0 auto;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.category-figure {
+  display: flex;
+  align-items: baseline;
+  flex: 0 0 auto;
+  font-variant-numeric: tabular-nums;
+}
+
+.percentage {
+  width: 80px;
+  text-align: right;
+  font-size: 14px;
+  color: var(--ink-muted);
+}
+
+.breakdown-row .category-amount {
+  width: 130px;
+  text-align: right;
+  font-weight: 500;
+}
+
+/* --- All expenses table --- */
+.report-table-wrapper {
+  overflow-x: auto;
+}
+
+.report-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.report-table th {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line-input);
+  font-size: 13px;
+  font-weight: 500;
+  text-align: left;
+  color: var(--ink-label);
+}
+
+.report-table th:nth-child(1) { width: 90px; }
+.report-table th:nth-child(3) { width: 150px; }
+.report-table th:nth-child(4) { width: 120px; }
+
+.report-table td {
+  padding: 11px 0;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.report-table tbody tr:last-child td {
+  border-bottom-color: var(--line-input);
+}
+
+.report-table .date-cell {
+  color: var(--ink-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.expense-report-table tbody td:nth-child(3) {
+  color: var(--ink-label);
+}
+
+.report-table .amount-cell {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.report-table tfoot td {
+  padding: 16px 0 0;
+  border-bottom: 0;
+  text-align: right;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+/* --- Footer --- */
+.report-footer {
+  margin-top: 16px;
+  font-size: 13px;
+  color: var(--ink-muted);
+}
+
+/* ---------- Print: hide controls, drop page chrome ---------- */
+@media print {
+  @page {
+    margin: 16mm;
+  }
+
+  body {
+    background: #ffffff;
+  }
+
+  .report-actions {
+    display: none;
+  }
+
+  .report-page {
+    max-width: none;
+    padding: 0;
+  }
+
+  .report-table tr {
+    break-inside: avoid;
+  }
+
+  .report-table thead {
+    display: table-header-group;
+  }
+}
+
+/* ---------- Small screens ---------- */
+@media (max-width: 600px) {
+  .report-page {
+    padding: 24px 20px 40px;
+  }
+
+  .money-stats,
+  .expense-stats,
+  .category-stats {
+    flex-basis: 100%;
+    padding: 12px 0;
+    border-left: 0;
+  }
+
+  .expense-stats,
+  .category-stats {
+    border-top: 1px solid var(--line);
+  }
+
+  .columns {
+    gap: 32px;
+  }
+
+  .expense-form {
+    flex-basis: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+  }
+}
