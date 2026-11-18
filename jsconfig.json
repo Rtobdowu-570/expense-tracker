@@ -1,0 +1,4 @@
+{
+  "compilerOptions": { "checkJs": true, "jsx": "react-jsx", "module": "esnext", "target": "es2022" },
+  "include": ["src"]
+}
